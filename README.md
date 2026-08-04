@@ -1,152 +1,116 @@
-# DealerScope AI 🚗💰
+# DealerScope AI
 
-> AI-powered revenue recovery platform for car dealerships — finds missed leads, service upsells, and inventory gaps, then alerts the GM in real time.
+> Revenue intelligence for car dealerships. Reads your DMS and CRM exports, finds the revenue already sitting in them, and tells you who to call.
 
-**🔴 Live at [dealerscope.app](https://dealerscope.app)**
+**Live at [dealerscope.app](https://dealerscope.app)**
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://react.dev)
+[![React](https://img.shields.io/badge/React_19-20232A?style=flat&logo=react&logoColor=61DAFB)](https://react.dev)
 [![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway)](https://railway.app)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel)](https://vercel.com)
 [![NVIDIA NIM](https://img.shields.io/badge/NVIDIA_NIM-76B900?style=flat&logo=nvidia&logoColor=white)](https://build.nvidia.com)
 
-> **Note:** This is a public showcase repository. The full production codebase is private.  
-> Try the live demo at [dealerscope.app](https://dealerscope.app) — login: `demo@dealership.com` / `demo123`
+> **This is a public showcase repository.** The production codebase is private.
+> Try the live demo at [dealerscope.app](https://dealerscope.app) with `demo@dealership.com` / `demo123`.
 
 ---
 
-## The Problem
+## The problem
 
-Most California car dealerships lose **$15,000–$30,000/month** in recoverable revenue:
+A dealership's CRM and DMS already contain the revenue. Nobody has time to go find it:
 
-- 🔴 **Lost leads** — 20–40% of leads never get a second follow-up call
-- 🔴 **Missed service upsells** — repair orders closed without flagging additional needed work  
-- 🔴 **Stale inventory** — vehicles sitting 60+ days with no targeted promotion
-- 🔴 **CRM gaps** — nobody actively monitoring for dropped opportunities
+- Leads that got one call and then nothing
+- Service work a customer declined, with no follow-up ever scheduled
+- Leases running to term with no outreach
+- Customers who quietly stopped coming in for service and never complained
 
-Enterprise solutions (VinSolutions, DealerSocket) cost $10,000+/month. DealerScope works in 24 hours with a CSV export.
+Enterprise tools in this category are priced for dealer groups and take weeks to integrate. DealerScope works off a CSV export.
 
----
-
-## How It Works
+## How it works
 
 ```
-1. CONNECT    Upload DMS export (Tekion, DealerSocket, CDK, any format)
-      │
-      ▼
-2. ANALYZE    AI scans every lead, RO, and inventory record overnight
-      │
-      ▼
-3. ALERT      GM receives real-time notification with dollar amount + who to call
-      │
-      ▼
-4. RECOVER    Dashboard shows exact recovery actions with one-click follow-up
+1. CONNECT   Upload a DMS or CRM export (Tekion, DealerSocket, CDK, or any format)
+     |
+     v
+2. ANALYZE   Adapter normalizes the columns, then every lead, RO, and lease is scored
+     |
+     v
+3. ALERT     Findings surface on the dashboard and via Telegram, each with a dollar figure
+     |
+     v
+4. RECOVER   Each finding carries a generated call script and the record it came from
 ```
 
 ---
 
-## System Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    PRODUCTION INFRASTRUCTURE                     │
-│                                                                 │
-│   User Browser                                                  │
-│       │                                                         │
-│       ▼                                                         │
-│  ┌─────────────┐    HTTPS     ┌──────────────────┐             │
-│  │ Vercel CDN  │ ◀──────────▶ │  FastAPI Backend  │             │
-│  │ React/Vite  │              │  Railway Cloud    │             │
-│  │ Edge Network│              │  Auto-deploy CI/CD│             │
-│  └─────────────┘              └────────┬─────────┘             │
-│                                        │                        │
-│                               Tailscale VPN (encrypted)         │
-│                                        │                        │
-│                               ┌────────▼─────────┐             │
-│                               │  Ubuntu Mini PC   │             │
-│                               │  Edge Agent       │             │
-│                               │  • Audit runner   │             │
-│                               │  • Telegram bot   │             │
-│                               │  • Cron pipelines │             │
-│                               │  • 24/7 systemd   │             │
-│                               └──────────────────┘             │
-└─────────────────────────────────────────────────────────────────┘
+        User browser
+             |
+             v
+   +------------------+        HTTPS       +----------------------+
+   |   Vercel edge    | <----------------> |   FastAPI backend    |
+   |  React 19 / Vite |                    |   Railway            |
+   |  auto-deploy     |                    |   auto-deploy        |
+   +------------------+                    +----------+-----------+
+                                                      |
+                                           +----------v-----------+
+                                           |  NVIDIA NIM API      |
+                                           |  z-ai/glm-5.2        |
+                                           |  call script gen     |
+                                           +----------------------+
 ```
 
-**Key design decisions:**
-- **Railway** for backend — zero-downtime auto-deploy on every `git push`
-- **Vercel CDN edge** for frontend — served from 30+ global PoPs, sub-100ms load
-- **Ubuntu mini PC as edge agent** — always-on via systemd lingering, handles all cron pipelines
-- **Tailscale VPN mesh** — encrypted node-to-node communication, no open ports on home network
+Both deploys are git-connected and fire on merge to `main`. Storage is file-based JSON on a mounted Railway volume.
 
 ---
 
-## Tech Stack
+## Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Backend | Python 3.11 · FastAPI · uvicorn |
-| Frontend | React 18 · Vite · Tailwind CSS |
-| AI/ML | NVIDIA NIM API · Kimi K2.5 LLM |
-| Cloud | Railway (backend) · Vercel (frontend) |
-| Networking | Tailscale VPN · GitHub CI/CD |
-| Notifications | Telegram Bot API |
-| Security | slowapi · JWT · bcrypt · CORS · input sanitization |
+|---|---|
+| Backend | Python 3.11, FastAPI, uvicorn |
+| Frontend | React 19.2, Vite 8, React Router v7 |
+| AI | NVIDIA NIM API, `z-ai/glm-5.2` |
+| Hosting | Railway (backend), Vercel (frontend) |
+| Storage | File-based JSON on a persistent volume |
+| Notifications | Telegram Bot API, SMTP |
+| Auth | Bearer token, bcrypt via passlib |
 
 ---
 
-## Security Implementation
+## Security
 
-```python
-# CORS locked to production domain only
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://dealerscope.app",
-        "https://www.dealerscope.app"
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
-)
+What actually ships:
 
-# Rate limiting — blocks brute force and abuse
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-
-# Security headers on every response
-response.headers["X-Content-Type-Options"] = "nosniff"
-response.headers["X-Frame-Options"] = "DENY"
-response.headers["Strict-Transport-Security"] = "max-age=31536000"
-
-# Input sanitization — strips XSS and injection patterns
-def sanitize_string(value: str, max_length: int = 500) -> str:
-    value = value.strip()[:max_length]
-    value = re.sub(r'[<>"\']', '', value)
-    return value
-```
+- **Password hashing** with bcrypt (`passlib`), including transparent rehash of legacy SHA-256 hashes on next successful login.
+- **Custom rate limiter** on login, registration, password change, and the deep health probe. Per-IP, sliding window.
+- **Security headers** on every response: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Strict-Transport-Security` with `includeSubDomains`.
+- **CORS** restricted to the production domains plus local dev origins.
+- **Admin and internal endpoints fail closed.** Every `/admin/*` and `/internal/*` route gates on an admin token and returns 403 when that token is unset, rather than falling back to a default.
+- **500 responses never include exception text.** Caught exceptions log server-side with context and return a generic message.
+- **No secrets in source.** Credentials come from environment variables only.
 
 ---
 
-## Universal CSV Adapter
+## The universal CSV adapter
 
-One of the core technical challenges — every dealership exports data differently. The adapter handles any format:
+The single hardest product problem. Every dealership exports data differently, and no two DMS platforms agree on a column name.
 
 ```python
-# Simplified example of the column mapping logic
+# Simplified illustration of the mapping layer
 FIELD_MAPPINGS = {
-    "name": ["customer_first_name", "first_name", "name", "customer"],
-    "email": ["customer_email", "email", "contact_email"],
-    "phone": ["customer_phone", "phone_number", "mobile", "cell"],
+    "name":    ["customer_first_name", "first_name", "name", "customer"],
+    "email":   ["customer_email", "email", "contact_email"],
+    "phone":   ["customer_phone", "phone_number", "mobile", "cell"],
     "vehicle": ["vehicle_interest", "vehicle_of_interest", "car_wanted"],
-    "status": ["lead_status", "opportunity_stage", "status"],
+    "status":  ["lead_status", "opportunity_stage", "status"],
 }
 
 def detect_columns(headers: list) -> dict:
-    """
-    Map unknown CSV headers to canonical field names.
-    Falls back to LLM inference for ambiguous columns.
-    """
+    """Map unknown CSV headers to canonical field names.
+    Ambiguous columns fall through to LLM inference."""
     mapping = {}
     for canonical, variants in FIELD_MAPPINGS.items():
         for header in headers:
@@ -156,39 +120,35 @@ def detect_columns(headers: list) -> dict:
     return mapping
 ```
 
-Supports: **Tekion · DealerSocket · CDK · Fullpath · Reynolds & Reynolds · Any custom format**
+Uploads are validated before they are stored. A malformed file returns a 400 naming the missing columns and leaves the previous run untouched, rather than silently producing a zero-finding result.
 
 ---
 
-## Dashboard Features
+## Not inventing numbers
+
+An analytics product that fabricates figures is worse than no product. Two design rules follow from that:
+
+- **The close-probability model refuses to guess.** It is Naive Bayes trained on the store's own closed-versus-lost leads. Below 20 closed deals it returns stated industry priors with an explicit disclaimer instead of a fabricated per-lead score.
+- **A test enforces it.** `test_no_fabricated_data.py` fails the build if an endpoint starts returning figures that no underlying data supports. Modules that are not built report themselves as not built.
+
+---
+
+## Dashboard
 
 | Feature | Description |
-|---------|-------------|
-| 💰 Revenue Recovery Feed | $18,770 total opportunity displayed in real time |
-| 👥 Lost Leads | Add, recover, filter leads — duplicate detection built in |
-| 🚗 Hot Inventory | Scan for stale vehicles, generate marketplace URLs |
-| 🔧 Service Department | Flag missed upsells, KPI cards per department |
-| 🔔 Alerts & Gaps | Resolve/reopen toggle, severity filtering |
-| 📁 Integrations Hub | Drag-and-drop CSV import, universal adapter |
-| 📋 Activity Log | Full audit trail with timestamp and user on every event |
-| ⚙️ Settings | Dark/light mode, notification preferences, profile management |
+|---|---|
+| Revenue recovery feed | Findings ranked by dollar value, each traceable to source records |
+| Lost leads | Filter, action, and recover leads with duplicate detection |
+| Close probability | Per-lead score with the top contributing factors in plain English |
+| Service department | Declined work and missed upsells, with per-advisor KPIs |
+| Lease and defection | Lease-end timing and customers who quietly stopped coming in |
+| Alerts and gaps | Severity filtering with resolve and reopen |
+| Integrations hub | Drag-and-drop CSV import through the universal adapter |
+| Activity log | Full audit trail, timestamped per event |
 
 ---
 
-## Business Model
-
-| Tier | Monthly | Features |
-|------|---------|---------|
-| Starter | $999 | CSV import, weekly audits, Telegram alerts |
-| Professional | $2,499 | Live DMS API, multiple logins, custom alerts |
-| Enterprise | $4,999 | Multi-location, dealer groups |
-| White Label | Custom | Resell under dealer's brand |
-
-Free 30-day pilot for California dealerships — no credit card, no commitment.
-
----
-
-## Try It Live
+## Try it
 
 **[dealerscope.app](https://dealerscope.app)**
 
@@ -197,25 +157,21 @@ Email:    demo@dealership.com
 Password: demo123
 ```
 
-All 9 dashboard features fully unlocked. California-themed demo data preloaded.
+Read-only demo account, preloaded with a fully worked example dealership.
 
 ---
 
-## Screenshots
+## Pricing
 
-> *Coming soon — live demo available at [dealerscope.app](https://dealerscope.app)*
-
----
-
-## Built By
-
-**Rudra Patel** — 18-year-old Solo Founder · Eastvale, CA  
-Data Science Student (Santiago Canyon College → UCSD/UCSB Fall 2026) · GPA 3.57
-
-[🔗 LinkedIn](https://linkedin.com/in/rudra-patel-a0a115354) · 
-[📧 rcppatel24@gmail.com](mailto:rcppatel24@gmail.com) · 
-[📱 (657) 258-7212](tel:6572587212)
+Contact for pricing. Pilot programs available for California dealerships.
 
 ---
 
-*Full production codebase is private. For technical deep-dives or partnership inquiries, reach out directly.*
+## Built by
+
+**Rudra Patel**, solo founder, Eastvale CA.
+Transferring to UC San Diego, Fall 2026, Cognitive Science with an ML / Neural Computation focus.
+
+[LinkedIn](https://linkedin.com/in/rudra-patel-a0a115354) · [rcppatel24@gmail.com](mailto:rcppatel24@gmail.com)
+
+*Production codebase is private. For technical deep-dives or partnership inquiries, reach out directly.*
