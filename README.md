@@ -170,7 +170,7 @@ Contact for pricing. Pilot programs available for California dealerships.
 ## Built by
 
 **Rudra Patel**, solo founder, Eastvale CA.
-Transferring to UC San Diego, Fall 2026, Cognitive Science with an ML / Neural Computation focus.
+Cognitive Science (ML & Neural Computation) student at UC San Diego.
 
 [LinkedIn](https://linkedin.com/in/rudra-patel-a0a115354) · [rcppatel24@gmail.com](mailto:rcppatel24@gmail.com)
 
